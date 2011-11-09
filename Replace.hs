@@ -6,14 +6,15 @@ import Snap.Util.FileServe
 import Control.Applicative
 import Prelude hiding (length, appendFile, take, concat, foldr)
 import Data.ByteString.Char8 hiding (foldr)
-import Data.String
+import Data.String (fromString)
 import Data.Time (formatTime, getCurrentTime, UTCTime)
 import Data.Time.Clock (getCurrentTime)
 import System.Locale (defaultTimeLocale)
-import Control.Monad.IO.Class
+import Control.Monad.IO.Class (liftIO)
 import Data.Map (Map, foldWithKey)
 import Data.CaseInsensitive (CI, original)
 import Data.List (foldr)
+
 
 formatTimestamp :: UTCTime -> String
 formatTimestamp x = formatTime defaultTimeLocale "%a, %e %b %y %H:%M:%S.%q" x
@@ -51,8 +52,9 @@ serveHeaders = do
 
 
 site :: Snap ()
-site = route [("/time", serveTime),
-        ("/headers", serveHeaders)]
+site = route
+    [("/time", serveTime),
+     ("/headers", serveHeaders)]
     <|> serveDirectory "content/"
 
 
