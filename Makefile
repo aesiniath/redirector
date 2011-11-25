@@ -1,4 +1,4 @@
-all: replace
+all: experiment
 
 ifdef V
 MAKEFLAGS=-R
@@ -7,8 +7,8 @@ MAKEFLAGS=-s -R
 REDIRECT=>/dev/null
 endif
 
-replace: Replace.hs
-	ghc --make -o replace -O Replace.hs
+experiment: Experiment.hs
+	ghc --make -O -o experiment Experiment.hs
 
 clean:
-	-rm -f *.hi *.o replace experiment
+	-rm -f *.hi *.o experiment
