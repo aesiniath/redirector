@@ -41,13 +41,13 @@ import Data.Map (foldrWithKey)
 --
 
 formatTimestamp :: UTCTime -> String
-formatTimestamp x = formatTime defaultTimeLocale "%a, %e %b %y %H:%M:%S.%q" x
+formatTimestamp x = formatTime defaultTimeLocale "%a %e %b %y, %H:%M:%S.%q" x
 
 getTimestamp :: IO ByteString
 getTimestamp = do
     cur <- getCurrentTime
     let time = fromString $ formatTimestamp cur
-    let len = length "Sat,  8 Oct 11 07:12:21.7"
+    let len = length "Sat  8 Oct 11, 07:12:21.7"
     return $ take len time
 
 
