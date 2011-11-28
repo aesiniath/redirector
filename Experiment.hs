@@ -36,25 +36,35 @@ import Data.List (foldr, head)
 import Data.Map (foldrWithKey)
 
 --
--- Utility function to output a timestamp in our standard format, with
--- tenth-of-a-second precision.
+-- Utility function to output a timestamp in our standard format, with 
+-- milisecond precision. You certainly don't need that across the net, but it
+-- makes for a useful signature in logs when things are busy.
 --
 
 formatTimestamp :: UTCTime -> String
 formatTimestamp x = formatTime defaultTimeLocale "%a %e %b %y, %H:%M:%S.%q" x
 
+
 getTimestamp :: IO ByteString
 getTimestamp = do
     cur <- getCurrentTime
     let time = fromString $ formatTimestamp cur
-    let len = length "Sat  8 Oct 11, 07:12:21.7"
-    return $ take len time
+    let len  = length "Sat  8 Oct 11, 07:12:21.999"
+    let str = take len time
+    return $ append str "Z\n"
 
+
+--
+-- Serve such a timestamp. text/plain is of course the default MIME type but
+-- this shows how to set it explicitly; presumably you'd need to do that for
+-- most handlers in normal use.
+--
 
 serveTime :: Snap ()
 serveTime = do
     time <- liftIO getTimestamp
-    writeBS $ append time "Z\n"
+    writeBS $ time
+    modifyResponse $ setContentType "text/plain"
 
 
 --
@@ -78,6 +88,7 @@ serveHeaders = do
     let h = headers req
     writeBS $ join h
 
+
 --
 -- Explore handling query string parameters. Params is not an opaque type like
 -- Headers is, so requires slightly different treatment.
@@ -94,6 +105,7 @@ serveRequest :: Snap ()
 serveRequest = do
     p <- getParams
     writeBS $ foldrWithKey combineParams "" p
+
 
 --
 -- Top level URL routing logic.
