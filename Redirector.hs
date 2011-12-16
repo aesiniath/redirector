@@ -23,18 +23,34 @@ import Snap.Http.Server
 import Snap.Core
 import Snap.Util.FileServe
 import Control.Applicative
-import Prelude hiding (length, appendFile, take, concat, foldr, head)
 import qualified Data.ByteString.Char8 as Strict
 import Data.Maybe (fromMaybe)
+
+--
+-- Conversion between decimal and base 62
+--
+
+represent :: Int -> Char
+represent x | x < 10 = chr (48 + x)
+            | x < 36 = chr (65 + x - 10)
+            | x < 62 = chr (97 + x - 36)
+            | otherwise '@'
+
+convert :: Int -> String
+convert x   = showIntAtBase 62 represent x ""
+
 --
 -- Process jump hash
 --
+
+lookupHash :: String -> String
+lookupHash = undefined
 
 serveJump :: Snap ()
 serveJump = do
     switch <- getParam "switch"
     hash   <- getParam "hash"
-    writeBS $ Strict.concat [ fromMaybe "Nothing" switch, "\n", fromMaybe "Nothing" hash ]  
+    redirect' "http://www.operationaldynamics.com/" 301
 
 serveNotFound :: Snap ()
 serveNotFound = undefined
