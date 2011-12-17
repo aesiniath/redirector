@@ -25,6 +25,8 @@ import Snap.Util.FileServe
 import Control.Applicative
 import qualified Data.ByteString.Char8 as Strict
 import Data.Maybe (fromMaybe)
+import Numeric
+import Data.Char
 
 --
 -- Conversion between decimal and base 62
@@ -34,10 +36,22 @@ represent :: Int -> Char
 represent x | x < 10 = chr (48 + x)
             | x < 36 = chr (65 + x - 10)
             | x < 62 = chr (97 + x - 36)
-            | otherwise '@'
+            | otherwise = '@'
 
-convert :: Int -> String
-convert x   = showIntAtBase 62 represent x ""
+encode :: Int -> String
+encode x   = showIntAtBase 62 represent x ""
+
+
+multiply :: Int -> Char -> Int
+multiply acc c = acc * 62 + value c
+    where
+        value c | isDigit c = ord c - 48
+        value c | isUpper c = ord c - 65 + 10
+        value c | isLower c = ord c - 97 + 36
+        value c | otherwise = 0
+
+decode :: String -> Int
+decode ss   = foldl multiply 0 ss
 
 --
 -- Process jump hash
