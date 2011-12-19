@@ -104,6 +104,13 @@ serveJump = do
     else
         redirect' t 301
 
+
+serveError :: String -> Snap ()
+serveError msg = do
+    modifyResponse $ setResponseStatus 500 "Internal Server Error"
+    writeBS "500 Internal Server Error\n"
+    writeBS $ S.pack msg
+
 --
 -- If a key is requested that doesn't exist, we give 404. TODO
 -- As this is probably a common case, we should serve a more
