@@ -17,7 +17,7 @@
 -- contacted through http://research.operationaldynamics.com/
 --
 
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 import Snap.Http.Server
 import Snap.Core
@@ -31,73 +31,16 @@ import Numeric
 import Data.Char
 import Database.Redis
 import Control.Monad.Trans (liftIO)
-import Prelude hiding (catch)
-import Control.Exception
 
---
--- Conversion between decimal and base 62
---
+import Lookup 
 
-represent :: Int -> Char
-represent x | x < 10 = chr (48 + x)
-            | x < 36 = chr (65 + x - 10)
-            | x < 62 = chr (97 + x - 36)
-            | otherwise = '@'
-
-encode :: Int -> String
-encode x    = showIntAtBase 62 represent x ""
-
-
-value :: Char -> Int
-value c     | isDigit c = ord c - 48
-            | isUpper c = ord c - 65 + 10
-            | isLower c = ord c - 97 + 36
-            | otherwise = 0
-
-multiply :: Int -> Char -> Int
-multiply acc c = acc * 62 + value c
-
-decode :: String -> Int
-decode ss   = foldl multiply 0 ss
-
---
--- Process jump hash
---
-
-fromValue :: RedisValue -> S.ByteString
-fromValue v = case v of
-        RedisString s   -> s
-        RedisInteger i  -> S.pack $ show i
-        RedisNil        -> "" -- used to be "(nil)"
-        RedisMulti vs   -> S.intercalate "\n" $ map fromValue vs
-
-
-toKey :: S.ByteString -> L.ByteString
-toKey x = L.fromChunks [x]
-
-
-queryKey :: Server -> S.ByteString -> IO S.ByteString
-queryKey r x = catch
-        (do
-            k <- get r $ toKey x
-            return $ fromValue k)
-        (\(e :: RedisError) -> do
-            putStrLn $ show e
-            return "")
-
-
-lookupHash :: S.ByteString -> Snap S.ByteString
-lookupHash x = bracketSnap
-    (connect "localhost" 6379)
-    (disconnect)
-    (\r -> liftSnap $ liftIO $ queryKey r x)
 
 
 serveJump :: Snap ()
 serveJump = do
     h <-  getParam "hash"
     let h' = fromMaybe "" h
-    t <- lookupHash h'
+    t <- liftIO $ lookupHash h'
     if t == ""
     then
         serveNotFound
