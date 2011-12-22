@@ -19,7 +19,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module Lookup (lookupHash) where
+module Lookup (lookupHash, test) where
 
 import qualified Data.ByteString.Char8 as S
 import qualified Data.ByteString.Lazy.Char8 as L
@@ -28,8 +28,7 @@ import Numeric
 import Data.Char
 import Database.Redis
 import Control.Monad.Trans (liftIO)
-import Prelude hiding (catch)
-import Control.Exception
+import Control.Monad.CatchIO (MonadCatchIO, bracket)
 
 
 --
@@ -83,14 +82,10 @@ queryKey r x = do
 
 
 lookupHash :: S.ByteString -> IO S.ByteString
-lookupHash x = catch
-    (bracket
+lookupHash x = bracket
         (connect "localhost" 6379)
         (disconnect)
-        (\r -> queryKey r x))
-    (\e -> do
-        putStrLn $ "Exception caught: " ++ show (e :: RedisError)
-        return "")
+        (\r -> queryKey r x)
 
 
 test :: String -> IO S.ByteString

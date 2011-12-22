@@ -19,6 +19,8 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
+import Prelude hiding (catch)
+
 import Snap.Http.Server
 import Snap.Core
 import Snap.Util.FileServe
@@ -29,18 +31,25 @@ import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Maybe (fromMaybe)
 import Numeric
 import Data.Char
-import Database.Redis
 import Control.Monad.Trans (liftIO)
+import Control.Monad.CatchIO (catch, throw)
+import Control.Exception (SomeException)
 
-import Lookup 
+import Lookup (lookupHash)
 
+lookupTarget :: S.ByteString -> Snap S.ByteString
+lookupTarget x = catch
+    (liftIO $ lookupHash x)
+    (\e -> do
+        logError $ S.pack $ "Exception caught: " ++ show (e :: SomeException)
+        return "")
 
 
 serveJump :: Snap ()
 serveJump = do
     h <-  getParam "hash"
     let h' = fromMaybe "" h
-    t <- liftIO $ lookupHash h'
+    t <- lookupTarget h'
     if t == ""
     then
         serveNotFound
