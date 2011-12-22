@@ -41,13 +41,13 @@ lookupTarget :: S.ByteString -> Snap S.ByteString
 lookupTarget x = catch
     (liftIO $ lookupHash x)
     (\e -> do
-        logError $ S.pack $ "Exception caught: " ++ show (e :: SomeException)
+        serveError x e
         return "")
 
 
 serveJump :: Snap ()
 serveJump = do
-    h <-  getParam "hash"
+    h <- getParam "hash"
     let h' = fromMaybe "" h
     t <- lookupTarget h'
     if t == ""
@@ -57,11 +57,15 @@ serveJump = do
         redirect' t 301
 
 
-serveError :: String -> Snap ()
-serveError msg = do
+serveError :: S.ByteString -> SomeException -> Snap ()
+serveError x e = do
+    logError msg
     modifyResponse $ setResponseStatus 500 "Internal Server Error"
     writeBS "500 Internal Server Error\n"
-    writeBS $ S.pack msg
+    r <- getResponse
+    finishWith r
+  where
+    msg = S.concat ["Looking up \"", x , "\", ", S.pack $ show (e :: SomeException)]
 
 --
 -- If a key is requested that doesn't exist, we give 404. TODO
