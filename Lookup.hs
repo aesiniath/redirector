@@ -17,17 +17,18 @@
 -- contacted through http://research.operationaldynamics.com/
 --
 
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, FlexibleInstances #-}
 
-module Lookup (lookupHash, test) where
+module Lookup (lookupHash, storeURL) where
 
 import qualified Data.ByteString.Char8 as S
 import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Maybe (fromMaybe)
-import Database.Redis
+import Database.Redis hiding (toParam)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.CatchIO (MonadCatchIO, bracket)
 
+import Hashes (convert)
 
 --
 -- Process jump hash
@@ -41,16 +42,13 @@ fromValue v = case v of
         RedisMulti vs   -> S.intercalate "\n" $ map fromValue vs
 
 
-toKey :: S.ByteString -> L.ByteString
-toKey x = L.fromChunks [x]
-
 
 queryKey :: Server -> S.ByteString -> IO S.ByteString
 queryKey r x = do
         k <- get r key
         return $ fromValue k
     where
-        key = toKey $ S.append "target:" x
+        key = toParam $ S.append "target:" x
 
 
 lookupHash :: S.ByteString -> IO S.ByteString
@@ -59,6 +57,58 @@ lookupHash x = bracket
         (disconnect)
         (\r -> queryKey r x)
 
+--
+-- Given a URL, calculate a hash for it and store at that address.
+-- Return the hash
+--
 
-test :: String -> IO S.ByteString
-test x = lookupHash $ S.pack x
+
+storeKey :: Server -> S.ByteString -> IO S.ByteString
+storeKey r v = do
+        result <- set r key value
+        if result 
+        then
+            return x
+        else
+            return "Problem!"
+    where
+        key = toParam $ S.append "target:" x
+        value = toParam v
+        x = S.pack $ convert url
+        url = S.unpack v
+
+
+storeURL :: S.ByteString -> IO S.ByteString
+storeURL u = bracket
+        (connect "localhost" 6379)
+        (disconnect)
+        (\r -> storeKey r u)
+
+--
+-- redis-haskell requires Lazy ByteStrings as parameters. Unfortunately, the
+-- toParam function that ships with that library uses show, which messes up
+-- Strings by encoding them.  
+--
+
+class Convert a where
+    view :: a -> L.ByteString
+
+instance Convert L.ByteString where
+    view s = s
+
+instance Convert S.ByteString where
+    view s = L.fromChunks [s]
+
+instance Convert Char where
+    view c = L.singleton c
+
+instance Convert [Char] where
+    view cs = L.pack cs
+
+instance Convert Int where
+    view x = L.pack $ show x
+
+
+toParam :: (Convert a) => a -> L.ByteString
+toParam x = view x
+
