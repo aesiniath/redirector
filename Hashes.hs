@@ -19,13 +19,14 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module Hashes (encode, decode) where
+module Hashes (encode, decode, convert) where
 
 import qualified Data.ByteString.Char8 as S
 import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Maybe (fromMaybe)
 import Numeric (showIntAtBase)
 import Data.Char (isDigit, isUpper, isLower, chr, ord)
+import Data.Digest.Murmur32 (hash32, asWord32)
 
 --
 -- Conversion between decimal and base 62
@@ -53,5 +54,21 @@ multiply acc c = acc * 62 + value c
 decode :: String -> Int
 decode ss   = foldl multiply 0 ss
 
-calculateHash :: String -> Int
-calculateHash ss = undefined
+
+--
+-- Given a URL, convert it into a 5 character hash.
+--
+
+digest :: String -> Int
+digest cs =
+        fromIntegral $ asWord32 $ hash32 cs
+
+
+convert :: String -> String
+convert cs =
+        encode x
+    where
+        x = mod n limit
+        n = digest cs
+        limit = 62 ^ 5
+
