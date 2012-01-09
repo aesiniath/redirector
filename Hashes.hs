@@ -19,14 +19,17 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module Hashes (encode, decode, convert) where
+module Hashes (encode, decode, convert, digest) where
+
+import Prelude hiding (toInteger)
 
 import qualified Data.ByteString.Char8 as S
 import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Maybe (fromMaybe)
 import Numeric (showIntAtBase)
 import Data.Char (isDigit, isUpper, isLower, chr, ord)
-import Data.Digest.Murmur32 (hash32, asWord32)
+import Data.Digest.SHA1 (hash, toInteger)
+import Data.Word
 
 --
 -- Conversion between decimal and base 62
@@ -38,7 +41,7 @@ represent x | x < 10 = chr (48 + x)
             | x < 62 = chr (97 + x - 36)
             | otherwise = '@'
 
-encode :: Int -> String
+encode :: Integer -> String
 encode x    = showIntAtBase 62 represent x ""
 
 
@@ -59,9 +62,18 @@ decode ss   = foldl multiply 0 ss
 -- Given a URL, convert it into a 5 character hash.
 --
 
-digest :: String -> Int
-digest cs =
-        fromIntegral $ asWord32 $ hash32 cs
+
+toWords :: String -> [Word8]
+toWords cs =
+        map fn cs
+    where
+        fn :: Char -> Word8
+        fn c = fromIntegral $ fromEnum c
+
+
+digest :: String -> Integer
+digest ws =
+        toInteger $ hash $ toWords ws
 
 
 convert :: String -> String
