@@ -27,8 +27,10 @@ import Data.Maybe (fromMaybe)
 import Database.Redis hiding (toParam)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.CatchIO (MonadCatchIO, bracket)
+import Numeric (showHex)
+import System.Random (randomRIO)
 
-import Hashes (convert)
+import Hashes (convert, encode, digest)
 
 --
 -- Process jump hash
@@ -58,31 +60,60 @@ lookupHash x = bracket
         (\r -> queryKey r x)
 
 --
--- Given a URL, calculate a hash for it and store at that address.
--- Return the hash
+-- Given a URL, generate a hash for it and store at that address. Return the
+-- hash. Complications: first check to see that we haven't already stored that
+-- URL; and, when storing, if the key already exists, we need to find choose
+-- another.
 --
 
+findAvailableKey :: Server -> IO String
+findAvailableKey r = do
+        num <- randomRIO (0, 62^5)
+        let x = encode num
+        let x' = S.pack x
 
-storeKey :: Server -> S.ByteString -> IO S.ByteString
-storeKey r v = do
-        result <- set r key value
-        if result 
+        v <- queryKey r x'
+
+        if S.null v
         then
             return x
         else
-            return "Problem!"
+            findAvailableKey r
+
+
+storeNewKey :: Server -> S.ByteString -> L.ByteString -> IO S.ByteString
+storeNewKey r u inverseKey = do
+        x <- findAvailableKey r
+        let
+            targetKey = toParam $ "target:" ++ x
+            targetValue = toParam u
+            inverseValue = toParam x
+
+        set r targetKey targetValue
+        set r inverseKey inverseValue
+        return $ S.pack x
+
+
+checkExistingKey :: Server -> S.ByteString -> IO S.ByteString
+checkExistingKey r u = do
+        h <- get r inverseKey
+        let h' = fromValue h
+
+        if S.null h'
+        then
+            storeNewKey r u inverseKey
+        else
+            return h'
     where
-        key = toParam $ S.append "target:" x
-        value = toParam v
-        x = S.pack $ convert url
-        url = S.unpack v
+        inverseKey = toParam $ "inverse:" ++ showHex y ""
+        y = digest $ S.unpack u
 
 
 storeURL :: S.ByteString -> IO S.ByteString
 storeURL u = bracket
         (connect "localhost" 6379)
         (disconnect)
-        (\r -> storeKey r u)
+        (\r -> checkExistingKey r u)
 
 --
 -- redis-haskell requires Lazy ByteStrings as parameters. Unfortunately, the
