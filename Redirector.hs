@@ -35,7 +35,7 @@ import Control.Monad.Trans (liftIO)
 import Control.Monad.CatchIO (catch, throw)
 import Control.Exception (SomeException)
 
-import Lookup (lookupHash)
+import Lookup (lookupHash, storeURL)
 
 lookupTarget :: S.ByteString -> Snap S.ByteString
 lookupTarget x = catch
@@ -48,8 +48,7 @@ lookupTarget x = catch
 serveJump :: Snap ()
 serveJump = do
     h <- getParam "hash"
-    let h' = fromMaybe "" h
-    t <- lookupTarget h'
+    t <- lookupTarget $ fromMaybe "" h
     if t == ""
     then
         serveNotFound
@@ -76,7 +75,36 @@ serveError x e = do
 serveNotFound :: Snap ()
 serveNotFound = do
     modifyResponse $ setResponseStatus 404 "Not Found"
-    writeBS "404 Not Found"
+    writeBS "404 Not Found\n"
+
+--
+-- Allow people to add URLs
+--
+
+serveBadRequest :: Snap ()
+serveBadRequest = do
+        modifyResponse $ setResponseStatus 400 "Bad Request"
+        writeBS "400 Bad Request\n"
+
+
+storeTarget :: S.ByteString -> Snap S.ByteString
+storeTarget x = catch
+        (liftIO $ storeURL x)
+        (\e -> do
+            serveError x e
+            return "")
+
+
+serveAdd :: Snap ()
+serveAdd = do
+        q <- getParam "url"
+        case q of
+            Just u  -> do
+                x <- storeTarget u
+                writeBS "http://odyn.co/"
+                writeBS x
+                writeBS "\n"
+            Nothing -> serveBadRequest
 
 --
 -- If they request / then we send them to the corporate home page 
@@ -86,6 +114,7 @@ serveHome :: Snap ()
 serveHome = do
     redirect' "http://www.operationaldynamics.com/" 302
 
+
 --
 -- Top level URL routing logic.
 --
@@ -93,6 +122,7 @@ serveHome = do
 site :: Snap ()
 site = route
     [("/", serveHome),
+     ("/add", method POST serveAdd),
      ("/:hash", serveJump)]
     <|> serveNotFound
 
