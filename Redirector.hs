@@ -39,32 +39,32 @@ import Lookup (lookupHash, storeURL)
 
 lookupTarget :: S.ByteString -> Snap S.ByteString
 lookupTarget x = catch
-    (liftIO $ lookupHash x)
-    (\e -> do
-        serveError x e
-        return "")
+        (liftIO $ lookupHash x)
+        (\e -> do
+            serveError x e
+            return "")
 
 
 serveJump :: Snap ()
 serveJump = do
-    h <- getParam "hash"
-    t <- lookupTarget $ fromMaybe "" h
-    if t == ""
-    then
-        serveNotFound
-    else
-        redirect' t 301
+        h <- getParam "hash"
+        t <- lookupTarget $ fromMaybe "" h
+        if t == ""
+        then
+            serveNotFound
+        else
+            redirect' t 301
 
 
 serveError :: S.ByteString -> SomeException -> Snap ()
 serveError x e = do
-    logError msg
-    modifyResponse $ setResponseStatus 500 "Internal Server Error"
-    writeBS "500 Internal Server Error\n"
-    r <- getResponse
-    finishWith r
-  where
-    msg = S.concat ["Looking up \"", x , "\", ", S.pack $ show (e :: SomeException)]
+        logError msg
+        modifyResponse $ setResponseStatus 500 "Internal Server Error"
+        writeBS "500 Internal Server Error\n"
+        r <- getResponse
+        finishWith r
+    where
+        msg = S.concat ["Looking up \"", x , "\", ", S.pack $ show (e :: SomeException)]
 
 --
 -- If a key is requested that doesn't exist, we give 404. TODO
@@ -74,8 +74,8 @@ serveError x e = do
 
 serveNotFound :: Snap ()
 serveNotFound = do
-    modifyResponse $ setResponseStatus 404 "Not Found"
-    writeBS "404 Not Found\n"
+        modifyResponse $ setResponseStatus 404 "Not Found"
+        writeBS "404 Not Found\n"
 
 --
 -- Allow people to add URLs
@@ -112,7 +112,7 @@ serveAdd = do
 
 serveHome :: Snap ()
 serveHome = do
-    redirect' "http://www.operationaldynamics.com/" 302
+        redirect' "http://www.operationaldynamics.com/" 302
 
 
 --
@@ -121,10 +121,10 @@ serveHome = do
 
 site :: Snap ()
 site = route
-    [("/", serveHome),
-     ("/add", method POST serveAdd),
-     ("/:hash", serveJump)]
-    <|> serveNotFound
+        [("/", serveHome),
+         ("/add", method POST serveAdd),
+         ("/:hash", serveJump)]
+        <|> serveNotFound
 
 main :: IO ()
 main = quickHttpServe site
