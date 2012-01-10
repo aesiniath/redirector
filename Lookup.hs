@@ -45,19 +45,28 @@ fromValue v = case v of
 
 
 
-queryKey :: Server -> S.ByteString -> IO S.ByteString
-queryKey r x = do
+queryTarget ::  Server -> S.ByteString -> IO S.ByteString
+queryTarget r x = do
         k <- get r key
         return $ fromValue k
     where
         key = toParam $ S.append "target:" x
 
 
+queryInverse :: Server -> String -> IO S.ByteString
+queryInverse r x = do
+        k <- get r key
+        return $ fromValue k
+    where
+        key = toParam $ "inverse:" ++ x
+
+
+
 lookupHash :: S.ByteString -> IO S.ByteString
 lookupHash x = bracket
         (connect "localhost" 6379)
         (disconnect)
-        (\r -> queryKey r x)
+        (\r -> queryTarget r x)
 
 --
 -- Given a URL, generate a hash for it and store at that address. Return the
@@ -72,7 +81,7 @@ findAvailableKey r = do
         let x = encode num
         let x' = S.pack x
 
-        v <- queryKey r x'
+        v <- queryTarget r x'
 
         if S.null v
         then
@@ -81,12 +90,13 @@ findAvailableKey r = do
             findAvailableKey r
 
 
-storeNewKey :: Server -> S.ByteString -> L.ByteString -> IO S.ByteString
-storeNewKey r u inverseKey = do
+storeNewKey :: Server -> S.ByteString -> String -> IO S.ByteString
+storeNewKey r u y = do
         x <- findAvailableKey r
         let
             targetKey = toParam $ "target:" ++ x
             targetValue = toParam u
+            inverseKey = toParam $ "inverse:" ++ y
             inverseValue = toParam x
 
         set r targetKey targetValue
@@ -96,17 +106,16 @@ storeNewKey r u inverseKey = do
 
 checkExistingKey :: Server -> S.ByteString -> IO S.ByteString
 checkExistingKey r u = do
-        h <- get r inverseKey
-        let h' = fromValue h
+        h <- queryInverse r y
 
-        if S.null h'
+        if S.null h
         then
-            storeNewKey r u inverseKey
+            storeNewKey r u y
         else
-            return h'
+            return h
     where
-        inverseKey = toParam $ "inverse:" ++ showHex y ""
-        y = digest $ S.unpack u
+        y = showHex s ""
+        s = digest $ S.unpack u
 
 
 storeURL :: S.ByteString -> IO S.ByteString
