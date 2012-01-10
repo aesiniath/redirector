@@ -67,15 +67,13 @@ serveError x e = do
         msg = S.concat ["Looking up \"", x , "\", ", S.pack $ show (e :: SomeException)]
 
 --
--- If a key is requested that doesn't exist, we give 404. TODO
--- As this is probably a common case, we should serve a more
--- interesting page.
+-- If a key is requested that doesn't exist, we give 404.
 --
 
 serveNotFound :: Snap ()
 serveNotFound = do
         modifyResponse $ setResponseStatus 404 "Not Found"
-        writeBS "404 Not Found\n"
+        serveFile "content/404.html"
 
 --
 -- Allow people to add URLs
