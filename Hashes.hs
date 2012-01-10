@@ -41,8 +41,16 @@ represent x | x < 10 = chr (48 + x)
             | x < 62 = chr (97 + x - 36)
             | otherwise = '@'
 
+toBase62 :: Integer -> String
+toBase62 x =
+        showIntAtBase 62 represent x ""
+
 encode :: Integer -> String
-encode x    = showIntAtBase 62 represent x ""
+encode x    = pad ++ str
+    where
+        pad = take len "00000"
+        len = 5 - length str
+        str = toBase62 x
 
 
 value :: Char -> Int
