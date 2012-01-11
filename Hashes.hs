@@ -36,34 +36,39 @@ import Data.Word
 --
 
 represent :: Int -> Char
-represent x | x < 10 = chr (48 + x)
-            | x < 36 = chr (65 + x - 10)
-            | x < 62 = chr (97 + x - 36)
-            | otherwise = '@'
+represent x
+    | x < 10 = chr (48 + x)
+    | x < 36 = chr (65 + x - 10)
+    | x < 62 = chr (97 + x - 36)
+    | otherwise = '@'
 
 toBase62 :: Integer -> String
 toBase62 x =
-        showIntAtBase 62 represent x ""
+    showIntAtBase 62 represent x ""
 
 encode :: Integer -> String
-encode x    = pad ++ str
-    where
-        pad = take len "00000"
-        len = 5 - length str
-        str = toBase62 x
+encode x =
+    pad ++ str
+  where
+    pad = take len "00000"
+    len = 5 - length str
+    str = toBase62 x
 
 
 value :: Char -> Int
-value c     | isDigit c = ord c - 48
-            | isUpper c = ord c - 65 + 10
-            | isLower c = ord c - 97 + 36
-            | otherwise = 0
+value c
+    | isDigit c = ord c - 48
+    | isUpper c = ord c - 65 + 10
+    | isLower c = ord c - 97 + 36
+    | otherwise = 0
 
 multiply :: Int -> Char -> Int
-multiply acc c = acc * 62 + value c
+multiply acc c =
+    acc * 62 + value c
 
 decode :: String -> Int
-decode ss   = foldl multiply 0 ss
+decode ss =
+    foldl multiply 0 ss
 
 
 --
@@ -73,22 +78,22 @@ decode ss   = foldl multiply 0 ss
 
 toWords :: String -> [Word8]
 toWords cs =
-        map fn cs
-    where
-        fn :: Char -> Word8
-        fn c = fromIntegral $ fromEnum c
+    map fn cs
+  where
+    fn :: Char -> Word8
+    fn c = fromIntegral $ fromEnum c
 
 
 digest :: String -> Integer
 digest ws =
-        toInteger $ hash $ toWords ws
+    toInteger $ hash $ toWords ws
 
 
 convert :: String -> String
 convert cs =
-        encode x
-    where
-        x = mod n limit
-        n = digest cs
-        limit = 62 ^ 5
+    encode x
+  where
+    x = mod n limit
+    n = digest cs
+    limit = 62 ^ 5
 
