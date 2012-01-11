@@ -38,35 +38,35 @@ import Hashes (convert, encode, digest)
 
 fromValue :: RedisValue -> S.ByteString
 fromValue v = case v of
-        RedisString s   -> s
-        RedisInteger i  -> S.pack $ show i
-        RedisNil        -> "" -- used to be "(nil)"
-        RedisMulti vs   -> S.intercalate "\n" $ map fromValue vs
+    RedisString s   -> s
+    RedisInteger i  -> S.pack $ show i
+    RedisNil        -> "" -- used to be "(nil)"
+    RedisMulti vs   -> S.intercalate "\n" $ map fromValue vs
 
 
 
 queryTarget ::  Server -> S.ByteString -> IO S.ByteString
 queryTarget r x = do
-        k <- get r key
-        return $ fromValue k
-    where
-        key = toParam $ S.append "target:" x
+    k <- get r key
+    return $ fromValue k
+  where
+    key = toParam $ S.append "target:" x
 
 
 queryInverse :: Server -> String -> IO S.ByteString
 queryInverse r x = do
-        k <- get r key
-        return $ fromValue k
-    where
-        key = toParam $ "inverse:" ++ x
+    k <- get r key
+    return $ fromValue k
+  where
+    key = toParam $ "inverse:" ++ x
 
 
 
 lookupHash :: S.ByteString -> IO S.ByteString
 lookupHash x = bracket
-        (connect "localhost" 6379)
-        (disconnect)
-        (\r -> queryTarget r x)
+    (connect "localhost" 6379)
+    (disconnect)
+    (\r -> queryTarget r x)
 
 --
 -- Given a URL, generate a hash for it and store at that address. Return the
@@ -77,52 +77,52 @@ lookupHash x = bracket
 
 findAvailableKey :: Server -> IO String
 findAvailableKey r = do
-        num <- randomRIO (0, 62^5)
-        let x = encode num
-        let x' = S.pack x
+    num <- randomRIO (0, 62^5)
+    let x = encode num
+    let x' = S.pack x
 
-        v <- queryTarget r x'
+    v <- queryTarget r x'
 
-        if S.null v
-        then
-            return x
-        else
-            findAvailableKey r
+    if S.null v
+    then
+        return x
+    else
+        findAvailableKey r
 
 
 storeNewKey :: Server -> S.ByteString -> String -> IO S.ByteString
 storeNewKey r u y = do
-        x <- findAvailableKey r
-        let
-            targetKey = toParam $ "target:" ++ x
-            targetValue = toParam u
-            inverseKey = toParam $ "inverse:" ++ y
-            inverseValue = toParam x
+    x <- findAvailableKey r
+    let
+        targetKey = toParam $ "target:" ++ x
+        targetValue = toParam u
+        inverseKey = toParam $ "inverse:" ++ y
+        inverseValue = toParam x
 
-        set r targetKey targetValue
-        set r inverseKey inverseValue
-        return $ S.pack x
+    set r targetKey targetValue
+    set r inverseKey inverseValue
+    return $ S.pack x
 
 
 checkExistingKey :: Server -> S.ByteString -> IO S.ByteString
 checkExistingKey r u = do
-        h <- queryInverse r y
+    h <- queryInverse r y
 
-        if S.null h
-        then
-            storeNewKey r u y
-        else
-            return h
-    where
-        y = showHex s ""
-        s = digest $ S.unpack u
+    if S.null h
+    then
+        storeNewKey r u y
+    else
+        return h
+  where
+    y = showHex s ""
+    s = digest $ S.unpack u
 
 
 storeURL :: S.ByteString -> IO S.ByteString
 storeURL u = bracket
-        (connect "localhost" 6379)
-        (disconnect)
-        (\r -> checkExistingKey r u)
+    (connect "localhost" 6379)
+    (disconnect)
+    (\r -> checkExistingKey r u)
 
 --
 -- redis-haskell requires Lazy ByteStrings as parameters. Unfortunately, the
