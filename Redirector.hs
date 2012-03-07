@@ -23,7 +23,6 @@ import Prelude hiding (catch)
 
 import Snap.Http.Server
 import Snap.Core
-import Snap.Util.FileServe
 import Control.Applicative
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as S
@@ -73,7 +72,7 @@ serveError x e = do
 serveNotFound :: Snap ()
 serveNotFound = do
     modifyResponse $ setResponseStatus 404 "Not Found"
-    serveFile "content/404.html"
+    sendFile "content/404.html"
 
 --
 -- Allow people to add URLs
