@@ -7,8 +7,10 @@ MAKEFLAGS=-s -R
 REDIRECT=>/dev/null
 endif
 
-redirect: Redirector.hs
+SOURCES=$(shell find . -name '*.hs')
+
+redirect: $(SOURCES)
 	ghc --make -O -o redirect Redirector.hs
 
 clean:
-	-rm -f *.hi *.o redirect
+	-rm -f *.hi *.o redirect tags
