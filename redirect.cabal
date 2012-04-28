@@ -17,7 +17,7 @@ executable           redirect
                      bytestring,
                      random,
                      Crypto,
-                     hedis >= 0.4
+                     hedis >= 0.4,
                      MonadCatchIO-transformers,
                      mtl,
                      snap-core,
