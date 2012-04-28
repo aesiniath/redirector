@@ -36,7 +36,6 @@ import Hashes (convert, encode, digest)
 -- Process jump hash
 --
 
-
 fromReply :: (Either Reply (Maybe S.ByteString)) -> S.ByteString
 fromReply x = 
     either first second x

@@ -23,9 +23,6 @@ module Hashes (encode, decode, convert, digest) where
 
 import Prelude hiding (toInteger)
 
-import qualified Data.ByteString.Char8 as S
-import qualified Data.ByteString.Lazy.Char8 as L
-import Data.Maybe (fromMaybe)
 import Numeric (showIntAtBase)
 import Data.Char (isDigit, isUpper, isLower, chr, ord)
 import Data.Digest.SHA1 (hash, toInteger)
@@ -74,7 +71,6 @@ decode ss =
 --
 -- Given a URL, convert it into a 5 character hash.
 --
-
 
 toWords :: String -> [Word8]
 toWords cs =
