@@ -24,8 +24,11 @@ module Hashes (encode, decode, convert, digest) where
 import Prelude hiding (toInteger)
 
 import Numeric (showIntAtBase)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as S
+import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Char (isDigit, isUpper, isLower, chr, ord)
-import Data.Digest.SHA1 (hash, toInteger)
+import Crypto.Hash.SHA1 as SHA1
 import Data.Word
 
 --
@@ -79,17 +82,28 @@ toWords cs =
     fn :: Char -> Word8
     fn c = fromIntegral $ fromEnum c
 
+concatToInteger :: [Word8] -> Integer
+concatToInteger bytes =
+    foldl fn 0 bytes
+  where
+    fn acc b = (acc * 256) + (fromIntegral b)
 
 digest :: String -> Integer
 digest ws =
-    toInteger $ hash $ toWords ws
+    i
+  where
+    i  = concatToInteger h
+    h  = B.unpack h'
+    h' = SHA1.hash x'
+    x' = S.pack ws
 
 
 convert :: String -> String
 convert cs =
-    encode x
+    r
   where
-    x = mod n limit
-    n = digest cs
+    r  = encode x
+    x  = mod n limit
+    n  = digest cs
     limit = 62 ^ 5
 
