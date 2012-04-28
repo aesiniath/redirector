@@ -37,33 +37,34 @@ import Control.Exception (SomeException)
 import Lookup (lookupHash, storeURL)
 
 lookupTarget :: S.ByteString -> Snap S.ByteString
-lookupTarget x = catch
-    (liftIO $ lookupHash x)
+lookupTarget x' = catch
+    (liftIO $ lookupHash x')
     (\e -> do
-        serveError x e
+        serveError x' e
         return "")
 
 
 serveJump :: Snap ()
 serveJump = do
-    h <- getParam "hash"
-    t <- lookupTarget $ fromMaybe "" h
-    if t == ""
+    h  <- getParam "hash"
+    t' <- lookupTarget $ fromMaybe "" h
+    if t' == ""
     then
         serveNotFound
     else
-        redirect' t 301
+        redirect' t' 301
 
 
 serveError :: S.ByteString -> SomeException -> Snap ()
-serveError x e = do
+serveError x' e = do
     logError msg
     modifyResponse $ setResponseStatus 500 "Internal Server Error"
     writeBS "500 Internal Server Error\n"
     r <- getResponse
     finishWith r
   where
-    msg = S.concat ["Looking up \"", x , "\", ", S.pack $ show (e :: SomeException)]
+    msg = S.concat ["Looking up \"", x' , "\", ", S.pack $ show (e :: SomeException)]
+
 
 --
 -- If a key is requested that doesn't exist, we give 404.
@@ -85,10 +86,10 @@ serveBadRequest = do
 
 
 storeTarget :: S.ByteString -> Snap S.ByteString
-storeTarget x = catch
-    (liftIO $ storeURL x)
+storeTarget x' = catch
+    (liftIO $ storeURL x')
     (\e -> do
-        serveError x e
+        serveError x' e
         return "")
 
 
@@ -96,10 +97,10 @@ serveAdd :: Snap ()
 serveAdd = do
     q <- getParam "url"
     case q of
-        Just u  -> do
-            x <- storeTarget u
+        Just u'  -> do
+            x' <- storeTarget u'
             writeBS "http://odyn.co/"
-            writeBS x
+            writeBS x'
             writeBS "\n"
         Nothing -> serveBadRequest
 
