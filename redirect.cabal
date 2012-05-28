@@ -16,7 +16,7 @@ executable           redirect
   build-depends:     base,
                      bytestring,
                      random,
-                     Crypto,
+                     cryptohashes,
                      hedis >= 0.4,
                      MonadCatchIO-transformers,
                      mtl,
