@@ -36,23 +36,51 @@ import Control.Exception (SomeException)
 
 import Lookup (lookupHash, storeURL)
 
-lookupTarget :: S.ByteString -> Snap S.ByteString
-lookupTarget x' = catch
-    (liftIO $ lookupHash x')
-    (\e -> do
-        serveError x' e
-        return "")
+
+--
+-- Top level URL routing logic.
+--
+
+main :: IO ()
+main = quickHttpServe site
 
 
-serveJump :: Snap ()
-serveJump = do
-    h  <- getParam "hash"
-    t' <- lookupTarget $ fromMaybe "" h
-    if t' == ""
-    then
-        serveNotFound
-    else
-        redirect' t' 301
+site :: Snap ()
+site = route
+    [("/", serveHome),
+     ("/add", method POST serveAdd),
+     ("/:hash", serveJump)]
+    <|> serveNotFound
+
+
+--
+-- If they request / then we send them to the corporate home page 
+--
+
+serveHome :: Snap ()
+serveHome = do
+    redirect' "http://www.operationaldynamics.com/" 302
+
+
+--
+-- If a key is requested that doesn't exist, we give 404.
+--
+
+serveNotFound :: Snap ()
+serveNotFound = do
+    modifyResponse $ setResponseStatus 404 "Not Found"
+    sendFile "content/404.html"
+
+
+--
+-- Error handlers. Could write error messages to HTTP, but it would expose
+-- internals and that's not desirable for a public facing service.
+--
+
+serveBadRequest :: Snap ()
+serveBadRequest = do
+    modifyResponse $ setResponseStatus 400 "Bad Request"
+    writeBS "400 Bad Request\n"
 
 
 serveError :: S.ByteString -> SomeException -> Snap ()
@@ -67,22 +95,47 @@ serveError x' e = do
 
 
 --
--- If a key is requested that doesn't exist, we give 404.
+-- On with the primary use case: looking up the supplied hash for a target.
 --
 
-serveNotFound :: Snap ()
-serveNotFound = do
-    modifyResponse $ setResponseStatus 404 "Not Found"
-    sendFile "content/404.html"
+serveJump :: Snap ()
+serveJump = do
+    h  <- getParam "hash"
+    t' <- lookupTarget $ fromMaybe "" h
+    if t' == ""
+    then
+        serveNotFound
+    else
+        redirect' t' 301
+
 
 --
--- Allow people to add URLs
+-- Allow people to add URLs. On success, output a string with the newly created
+-- lookup hash.
 --
 
-serveBadRequest :: Snap ()
-serveBadRequest = do
-    modifyResponse $ setResponseStatus 400 "Bad Request"
-    writeBS "400 Bad Request\n"
+serveAdd :: Snap ()
+serveAdd = do
+    q <- getParam "url"
+    case q of
+        Just u' -> do
+            x' <- storeTarget u'
+            writeBS "http://odyn.co/"
+            writeBS x'
+            writeBS "\n"
+        Nothing -> serveBadRequest
+
+
+--
+-- Lift the requests to IO and pass them off to the database lookup code.
+--
+
+lookupTarget :: S.ByteString -> Snap S.ByteString
+lookupTarget x' = catch
+    (liftIO $ lookupHash x')
+    (\e -> do
+        serveError x' e
+        return "")
 
 
 storeTarget :: S.ByteString -> Snap S.ByteString
@@ -91,39 +144,4 @@ storeTarget x' = catch
     (\e -> do
         serveError x' e
         return "")
-
-
-serveAdd :: Snap ()
-serveAdd = do
-    q <- getParam "url"
-    case q of
-        Just u'  -> do
-            x' <- storeTarget u'
-            writeBS "http://odyn.co/"
-            writeBS x'
-            writeBS "\n"
-        Nothing -> serveBadRequest
-
---
--- If they request / then we send them to the corporate home page 
---
-
-serveHome :: Snap ()
-serveHome = do
-    redirect' "http://www.operationaldynamics.com/" 302
-
-
---
--- Top level URL routing logic.
---
-
-site :: Snap ()
-site = route
-    [("/", serveHome),
-     ("/add", method POST serveAdd),
-     ("/:hash", serveJump)]
-    <|> serveNotFound
-
-main :: IO ()
-main = quickHttpServe site
 

@@ -33,37 +33,27 @@ import System.Random (randomRIO)
 import Hashes (convert, encode, digest)
 
 --
--- Process jump hash
+-- Utility function to extract the reply from the complex type hedis returns. If
+-- there's an error condition (regardless of whether it is a Left for server
+-- error or Nothing for a blank value), return an empty string.
 --
 
 fromReply :: (Either Reply (Maybe S.ByteString)) -> S.ByteString
-fromReply x = 
-    either first second x
+fromReply x' = 
+    either first second x'
   where
     first :: Reply -> S.ByteString
-    first (Error s) = s
+    first (Error s') = s'
     first _         = ""
 
     second :: (Maybe S.ByteString) -> S.ByteString
     second = fromMaybe ""
 
 
-queryTarget ::  S.ByteString -> Redis S.ByteString
-queryTarget x = do
-    k <- get key
-    return $ fromReply k
-  where
-    key = S.append "target:" x
-
-
-queryInverse :: S.ByteString -> Redis S.ByteString
-queryInverse x = do
-    k <- get key
-    return $ fromReply k
-  where
-    key = S.append "inverse:" x
-
-
+--
+-- Process jump hash. This entry point gets us from IO into the Redis monad,
+-- and deals with connection setup and teardown.
+--
 
 lookupHash :: S.ByteString -> IO S.ByteString
 lookupHash x = bracket
@@ -71,41 +61,34 @@ lookupHash x = bracket
     (\r -> runRedis r $ quit)
     (\r -> runRedis r $ queryTarget x)
 
+
+queryTarget ::  S.ByteString -> Redis S.ByteString
+queryTarget x' = do
+    k <- get key
+    return $ fromReply k
+  where
+    key = S.append "target:" x'
+
+
+--
+-- Store a new URL and return the assigned hash. This entry point likewise wraps
+-- getting us from IO into the Redis monad, and deals with connection setup and
+-- teardown.
+--
+
+storeURL :: S.ByteString -> IO S.ByteString
+storeURL u' = bracket
+    (connect defaultConnectInfo)
+    (\r -> runRedis r $ quit)
+    (\r -> runRedis r $ checkExistingKey u')
+
+
 --
 -- Given a URL, generate a hash for it and store at that address. Return the
 -- hash. Complications: first check to see that we haven't already stored that
 -- URL; and, when storing, if the key already exists, we need to find choose
 -- another.
 --
-
-findAvailableKey :: Redis S.ByteString
-findAvailableKey = do
-    num <- liftIO $ randomRIO (0, 62^5)
-    let x  = encode num
-        x' = S.pack x
-
-    v <- queryTarget x'
-
-    if S.null v
-    then
-        return x'
-    else
-        findAvailableKey
-
-
-storeNewKey :: S.ByteString -> S.ByteString -> Redis S.ByteString
-storeNewKey u' y' = do
-    x' <- findAvailableKey
-    let
-        targetKey = S.append "target:" x'
-        targetValue = u'
-        inverseKey = S.append "inverse:" y'
-        inverseValue = x'
-
-    set targetKey targetValue
-    set inverseKey inverseValue
-    return x'
-
 
 checkExistingKey :: S.ByteString -> Redis S.ByteString
 checkExistingKey u' = do
@@ -123,9 +106,39 @@ checkExistingKey u' = do
     u  = S.unpack u'
 
 
-storeURL :: S.ByteString -> IO S.ByteString
-storeURL u' = bracket
-    (connect defaultConnectInfo)
-    (\r -> runRedis r $ quit)
-    (\r -> runRedis r $ checkExistingKey u')
+queryInverse :: S.ByteString -> Redis S.ByteString
+queryInverse x' = do
+    k <- get key
+    return $ fromReply k
+  where
+    key = S.append "inverse:" x'
+
+
+storeNewKey :: S.ByteString -> S.ByteString -> Redis S.ByteString
+storeNewKey u' y' = do
+    x' <- findAvailableKey
+    let
+        targetKey = S.append "target:" x'
+        targetValue = u'
+        inverseKey = S.append "inverse:" y'
+        inverseValue = x'
+
+    set targetKey targetValue
+    set inverseKey inverseValue
+    return x'
+
+
+findAvailableKey :: Redis S.ByteString
+findAvailableKey = do
+    num <- liftIO $ randomRIO (0, 62^5)
+    let x  = encode num
+        x' = S.pack x
+
+    v <- queryTarget x'
+
+    if S.null v
+    then
+        return x'
+    else
+        findAvailableKey
 
