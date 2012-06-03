@@ -36,7 +36,6 @@ import Control.Exception (SomeException)
 
 import Lookup (lookupHash, storeURL)
 
-
 --
 -- Top level URL routing logic.
 --
@@ -70,7 +69,6 @@ serveNotFound :: Snap ()
 serveNotFound = do
     modifyResponse $ setResponseStatus 404 "Not Found"
     sendFile "content/404.html"
-
 
 --
 -- Error handlers. Could write error messages to HTTP, but it would expose
