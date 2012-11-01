@@ -118,7 +118,7 @@ serveAdd = do
     case q of
         Just u' -> do
             x' <- storeTarget u'
-            writeBS "http://odyn.co/"
+            writeBS "http://localhost:8000/"
             writeBS x'
             writeBS "\n"
         Nothing -> serveBadRequest
