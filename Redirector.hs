@@ -81,7 +81,7 @@ serveBadRequest = do
     writeBS "400 Bad Request\n"
 
 
-serveError :: S.ByteString -> SomeException -> Snap ()
+serveError :: ByteString -> SomeException -> Snap ()
 serveError x' e = do
     logError msg
     modifyResponse $ setResponseStatus 500 "Internal Server Error"

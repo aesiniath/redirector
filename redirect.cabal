@@ -23,6 +23,8 @@ executable           redirect
                      snap-core,
                      snap-server
   main-is:           Redirector.hs
+  other-modules:     Hashes,
+                     Lookup
   extensions:        DoAndIfThenElse
 
 

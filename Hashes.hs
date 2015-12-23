@@ -42,9 +42,11 @@ represent x
     | x < 62 = chr (97 + x - 36)
     | otherwise = '@'
 
+
 toBase62 :: Integer -> String
 toBase62 x =
     showIntAtBase 62 represent x ""
+
 
 encode :: Integer -> String
 encode x =
@@ -62,9 +64,11 @@ value c
     | isLower c = ord c - 97 + 36
     | otherwise = 0
 
+
 multiply :: Int -> Char -> Int
 multiply acc c =
     acc * 62 + value c
+
 
 decode :: String -> Int
 decode ss =
@@ -82,20 +86,22 @@ toWords cs =
     fn :: Char -> Word8
     fn c = fromIntegral $ fromEnum c
 
+
 concatToInteger :: [Word8] -> Integer
 concatToInteger bytes =
-    foldl fn 0 bytes
+    foldl f 0 bytes
   where
-    fn acc b = (acc * 256) + (fromIntegral b)
+    f acc b = (acc * 256) + (fromIntegral b)
+
 
 digest :: String -> Integer
-digest ws =
+digest x =
     i
   where
-    i  = concatToInteger h
-    h  = B.unpack h'
+    i  = concatToInteger hs
+    hs = B.unpack h'
     h' = SHA1.hash x'
-    x' = S.pack ws
+    x' = S.pack x
 
 
 convert :: String -> String
