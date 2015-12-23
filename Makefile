@@ -10,7 +10,7 @@ endif
 SOURCES=$(shell find . -name '*.hs')
 
 redirect: $(SOURCES)
-	ghc --make -O2 -threaded -o redirect Redirector.hs
+	stack build
 
 clean:
-	-rm -f *.hi *.o redirect tags
+	-rm -f *.hi *.o redirect codex.tags
