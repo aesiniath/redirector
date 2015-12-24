@@ -1,5 +1,6 @@
 resolver: lts-3.19
 packages:
 - '.'
-extra-deps: []
+extra-deps:
+- locators-0.2.4.2
 flags: {}

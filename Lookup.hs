@@ -30,7 +30,7 @@ import Control.Monad.CatchIO (MonadCatchIO, bracket)
 import Numeric (showHex)
 import System.Random (randomRIO)
 
-import Hashes (convert, encode, digest)
+import Data.Locator (toBase62, fromBase62, padWithZeros, hashStringToBase62)
 
 --
 -- Utility function to extract the reply from the complex type hedis returns. If
@@ -63,11 +63,12 @@ lookupHash x = bracket
 
 
 queryTarget ::  S.ByteString -> Redis S.ByteString
-queryTarget x' = do
+queryTarget x' =
+  let
+    key = S.append "target:" x'
+  in do
     k <- get key
     return $ fromReply k
-  where
-    key = S.append "target:" x'
 
 
 --
@@ -100,18 +101,16 @@ checkExistingKey u' = do
     else
         return h'
   where
-    y' = S.pack y
-    y  = showHex s ""
-    s  = digest u
-    u  = S.unpack u'
+    y' = hashStringToBase62 27 u'
 
 
 queryInverse :: S.ByteString -> Redis S.ByteString
-queryInverse x' = do
+queryInverse y' =
+  let
+    key = S.append "inverse:" y'
+  in do
     k <- get key
     return $ fromReply k
-  where
-    key = S.append "inverse:" x'
 
 
 storeNewKey :: S.ByteString -> S.ByteString -> Redis S.ByteString
@@ -131,12 +130,11 @@ storeNewKey u' y' = do
 findAvailableKey :: Redis S.ByteString
 findAvailableKey = do
     num <- liftIO $ randomRIO (0, 62^5)
-    let x  = encode num
-        x' = S.pack x
+    let x' = S.pack . padWithZeros 5 . toBase62 $ num
 
-    v <- queryTarget x'
+    v' <- queryTarget x'
 
-    if S.null v
+    if S.null v'
     then
         return x'
     else

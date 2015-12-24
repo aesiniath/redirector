@@ -1,14 +1,14 @@
 cabal-version:       >= 1.2
 name:                redirect
-version:             0.1.1.0
+version:             0.1.2.0
 synopsis:            Shortened URL redirector
 license:             GPL-2
 license-file:        COPYING
 author:              Andrew Cowie <andrew@operationaldynamics.com>
 maintainer:          Andrew Cowie <andrew@operationaldynamics.com>
-copyright:           © 2011-2012 Operational Dynamics Consulting, Pty Ltd
+copyright:           © 2011-2015 Operational Dynamics Consulting, Pty Ltd
 category:            Web
-tested-with:         GHC == 7.0
+tested-with:         GHC == 7.10
 
 build-type:          Simple
 
@@ -20,6 +20,7 @@ executable           redirect
                      hedis >= 0.4,
                      MonadCatchIO-transformers,
                      mtl,
+                     locators,
                      snap-core,
                      snap-server
   main-is:           Redirector.hs
