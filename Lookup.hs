@@ -25,8 +25,8 @@ import qualified Data.ByteString.Char8 as S
 import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Maybe (fromMaybe)
 import Database.Redis
+import Control.Exception.Lifted (SomeException, bracket)
 import Control.Monad.Trans (liftIO)
-import Control.Monad.CatchIO (MonadCatchIO, bracket)
 import Numeric (showHex)
 import System.Random (randomRIO)
 

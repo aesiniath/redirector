@@ -1,14 +1,14 @@
-cabal-version:       >= 1.2
+cabal-version:       >= 1.24
 name:                redirect
-version:             0.1.2.0
+version:             0.2.0.1
 synopsis:            Shortened URL redirector
 license:             GPL-2
 license-file:        COPYING
 author:              Andrew Cowie <andrew@operationaldynamics.com>
 maintainer:          Andrew Cowie <andrew@operationaldynamics.com>
-copyright:           © 2011-2015 Operational Dynamics Consulting, Pty Ltd
+copyright:           © 2011-2018 Operational Dynamics Consulting, Pty Ltd
 category:            Web
-tested-with:         GHC == 7.10
+tested-with:         GHC == 8.2
 
 build-type:          Simple
 
@@ -18,8 +18,8 @@ executable           redirect
                      random,
                      cryptohash,
                      hedis >= 0.4,
-                     MonadCatchIO-transformers,
                      mtl,
+                     lifted-base,
                      locators,
                      snap-core,
                      snap-server

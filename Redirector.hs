@@ -30,9 +30,8 @@ import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Maybe (fromMaybe)
 import Numeric
 import Data.Char
+import Control.Exception.Lifted (SomeException, throwIO, catch)
 import Control.Monad.Trans (liftIO)
-import Control.Monad.CatchIO (catch, throw)
-import Control.Exception (SomeException)
 
 import Lookup (lookupHash, storeURL)
 
